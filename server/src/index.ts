@@ -57,7 +57,6 @@ async function scrapeUrl(url: string) {
       throw new ApiError(400, `Error fetching content from Invaild URL.`)
     }
     const webPageContent = await scrapeRelevantText(page)
-    console.log(webPageContent)
 
     return webPageContent
   } catch (error) {
