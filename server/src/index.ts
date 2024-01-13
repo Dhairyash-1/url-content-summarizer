@@ -34,29 +34,34 @@ app.post("/url-summarize", async (req: Request, res: Response) => {
   try {
     const scrapedText = await scrapeUrl(url)
     const summary = await getGPTSummary(scrapedText)
-    res.status(200).json({ summary })
+    res.status(200).json({ status: 200, summary })
   } catch (error) {
     if (error instanceof ApiError) {
-      res.status(error.statusCode).json({ error: error.message })
+      res
+        .status(error.statusCode)
+        .json({ status: error.statusCode, error: error.message })
     } else {
-      res.status(500).json({ error: "Internal Server Error" })
+      res.status(500).json({ status: 500, error: "Internal Server Error" })
     }
   }
 })
 
 async function scrapeUrl(url: string) {
   try {
+    console.time("scrapeUrl")
     const browser = await puppeteer.connect({
       browserWSEndpoint: `wss://chrome.browserless.io?token=${process.env.BLESS_TOKEN}`,
     })
     const page = await browser.newPage()
     const response = await page.goto(url, { waitUntil: "domcontentloaded" })
 
+    console.timeEnd("scrapeUrl")
     // handling situation if given url is wrong
     if (!response || response.status() !== 200) {
       throw new ApiError(400, `Error fetching content from Invaild URL.`)
     }
-    const webPageContent = await scrapeRelevantText(page)
+
+    const webPageContent = await page.evaluate(() => document.body.innerText)
 
     return webPageContent
   } catch (error) {
@@ -67,6 +72,11 @@ async function scrapeUrl(url: string) {
 }
 
 async function getGPTSummary(text: string): Promise<string> {
+  console.time("gpt")
+  if (text.length > 4000) {
+    text = text.substring(0, 4000)
+  }
+
   const OpenAI = new openai({
     apiKey: process.env.OPENAI_API_KEY || "",
   })
@@ -95,6 +105,7 @@ async function getGPTSummary(text: string): Promise<string> {
     })
 
     const summary = response.choices[0]?.message?.content || ""
+    console.timeEnd("gpt")
     return summary
   } catch (error) {
     console.error(`Error in getting summary from OpenAI:`, error)
@@ -103,43 +114,9 @@ async function getGPTSummary(text: string): Promise<string> {
     } else if (error.message.includes("Rate limit")) {
       throw new ApiError(500, "OpenAI API rate limit exceeded")
     } else {
-      throw new ApiError(
-        400,
-        `Error in OpenAI API request: ${error.message || "Unknown error"}`
-      )
+      throw new ApiError(400, `Error in getting summary from OpenAI`)
     }
   }
-}
-
-async function scrapeRelevantText(page: any) {
-  const contentSelector = "body" //  Extracting content from the entire body
-
-  // Extract content from the selected element
-  let webpageContent: string = await page.$eval(
-    contentSelector,
-    (contentElement: any) => {
-      return contentElement.innerText
-    }
-  )
-
-  // Remove unnecessary elements (example: removing headers and footers)
-  const unnecessaryElements = ["header", "footer", "nav"]
-  for (const element of unnecessaryElements) {
-    await page.$$eval(element, (elements: any) => {
-      elements.forEach((el: any) => el.remove())
-    })
-  }
-
-  // Trim and clean the content
-  webpageContent = webpageContent.trim().replace(/\n\s*\n/g, "\n")
-
-  // Limit the length of the content (adjust as needed)
-  const maxContentLength = 5000
-  if (webpageContent.length > maxContentLength) {
-    webpageContent = webpageContent.slice(0, maxContentLength)
-  }
-
-  return webpageContent
 }
 
 app.listen(PORT, () => {

@@ -12,7 +12,21 @@ body {
   width: 100%;
   padding: 12px;
 }
-
+.error {
+  max-width: 600px;
+  margin-top: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 25px;
+  /* background: #ff3333; */
+  color: #ff3333;
+  gap: 35px;
+}
+.error img {
+  width: 30px;
+  height: 30px;
+}
 header {
   padding: 10px 50px;
 }

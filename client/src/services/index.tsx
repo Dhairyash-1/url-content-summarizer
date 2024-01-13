@@ -10,6 +10,5 @@ export default async function getSummarizeText(url: string) {
     }
   )
   const data = await response.json()
-  const summary = data.summary
-  return summary
+  return data
 }
