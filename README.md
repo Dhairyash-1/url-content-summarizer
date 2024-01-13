@@ -17,7 +17,7 @@ This project provides a web application for summarizing the content of a given U
 
 ## Live Demo
 
-Explore the live demo [here](https://web-scrape-url-summarizer-quxy.vercel.app/).
+Explore the live demo [here](https://url-summarizer.netlify.app/).
 
 ## Getting Started
 

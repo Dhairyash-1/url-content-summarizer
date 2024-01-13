@@ -20,9 +20,11 @@ export default function Home() {
         throw new Error(response.error)
       }
       setSummary(response.summary)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error)
-      setError(error.message)
+      if (error instanceof Error) {
+        setError(error.message)
+      }
       console.log(`Error in posting url to server, ${error}`)
     } finally {
       setIsLoading(false)
